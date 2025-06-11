@@ -1,4 +1,8 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# pdf slug host
+
+A website where users can upload a pdf, choose a unique slug, and host their pdf at a custom url like:
+
+`https://<domain>/[slug]`
 
 ## Getting Started
 
@@ -6,31 +10,44 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Upload a pdf
+- Choose a unique slug (e.g., `/restaurant-name`)
+- The pdf is viewable / downloadable at the url
+- Users provide a username and password to manage the slug
+- Create a qr code for the slug
+- Verify ownership before allowing updates (replacing the pdf) for a slug
 
-## Learn More
+## Stack
 
-To learn more about Next.js, take a look at the following resources:
+- Next.js
+- Supabase (auth & database)
+- Amazon S3
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Supabase Table: `pdf_slugs`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Column          | Type      | Description                       |
+|-----------------|:----------|:----------------------------------|
+| `id`            | uuid      | primary key                      |
+| `slug`          | text      | unique slug for pdf access       |
+| `user_id`       | uuid      | owner                            |
+| `pdf`           | text      | public url to the pdf            |
+| `created_at`    | timestamp | timestamp of create              |
+| `updated_at`    | timestamp | timestamp of update              |
 
-## Deploy on Vercel
+## User Flow
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. User signs up with email and password
+2. User uploads a pdf
+3. Enters a unique slug
+4. The pdf is accessible at `https://<domain>/[slug]`
+5. To update the pdf, the user must be authenticated and the owner of the slug
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Future 
+
+- Add Stripe: Charge $1 for initial upload / update fee
