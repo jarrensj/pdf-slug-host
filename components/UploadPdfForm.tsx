@@ -1,15 +1,21 @@
 "use client";
 import { useRef, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 
 export default function UploadPdfForm() {
   const [slug, setSlug] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useUser();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  console.log(user);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
     if (!file) {
       setError("Please upload a PDF file.");
       return;
@@ -18,10 +24,31 @@ export default function UploadPdfForm() {
       setError("Please enter a valid unique name (letters, numbers, dashes, underscores only). e.g. my-document");
       return;
     }
-    // Placeholder: handle upload logic here
-    alert(`PDF: ${file.name}\nSlug: ${slug}`);
-    setSlug("");
-    setFile(null);
+    if (!user) {
+      setError("You must be signed in to upload a PDF.");
+      return;
+    }
+    try {
+      const res = await fetch("/api/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug,
+          pdf: "https://example.com/dummy.pdf", // Dummy URL for now
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to create PDF slug.");
+        return;
+      }
+      setSuccess(`${slug} created successfully!`);
+      setSlug("");
+      setFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (err) {
+      setError("An unexpected error occurred.");
+    }
   };
 
   return (
@@ -53,6 +80,7 @@ export default function UploadPdfForm() {
           />
         </label>
         {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+        {success && <div className="text-green-600 text-sm text-center">{success}</div>}
         <button
           type="submit"
           className="mt-2 bg-foreground text-background rounded px-4 py-2 font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 dark:hover:text-black transition-colors"
