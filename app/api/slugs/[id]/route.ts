@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClerkSupabaseClient } from "@/app/lib/db";
 import { getAuth } from "@clerk/nextjs/server";
 
+interface RouteParams {
+  params: {
+    id: string;
+  };
+}
+
 // DELETE /api/slugs/[id] - Delete a PDF slug
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ) {
   try {
     const { userId } = getAuth(req);
@@ -52,7 +58,7 @@ export async function DELETE(
 // PATCH /api/slugs/[id] - Update a PDF slug name
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ) {
   try {
     const { userId } = getAuth(req);
