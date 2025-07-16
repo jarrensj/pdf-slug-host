@@ -2,16 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClerkSupabaseClient } from "@/app/lib/db";
 import { getAuth } from "@clerk/nextjs/server";
 
-interface RouteParams {
-  params: {
-    id: Promise<string>;
-  };
-}
-
 // DELETE /api/slugs/[id] - Delete a PDF slug
 export async function DELETE(
   req: NextRequest,
-  { params }: RouteParams
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId } = getAuth(req);
@@ -19,13 +13,14 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
     const supabase = await createClerkSupabaseClient(req);
     
     // First, verify the slug belongs to the user
     const { data: existingSlug, error: fetchError } = await supabase
       .from("pdf_slugs")
       .select("user_id")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
 
     if (fetchError || !existingSlug) {
@@ -40,7 +35,7 @@ export async function DELETE(
     const { error: deleteError } = await supabase
       .from("pdf_slugs")
       .delete()
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", userId);
 
     if (deleteError) {
@@ -58,7 +53,7 @@ export async function DELETE(
 // PATCH /api/slugs/[id] - Update a PDF slug name
 export async function PATCH(
   req: NextRequest,
-  { params }: RouteParams
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { userId } = getAuth(req);
@@ -66,6 +61,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
     const body = await req.json();
     const { slug: newSlug } = body;
 
@@ -81,7 +77,7 @@ export async function PATCH(
     const { data: existingSlug, error: fetchError } = await supabase
       .from("pdf_slugs")
       .select("user_id, slug")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
 
     if (fetchError || !existingSlug) {
@@ -97,7 +93,7 @@ export async function PATCH(
       .from("pdf_slugs")
       .select("id")
       .eq("slug", newSlug)
-      .neq("id", params.id)
+      .neq("id", id)
       .single();
 
     if (duplicateSlug) {
@@ -113,7 +109,7 @@ export async function PATCH(
         slug: newSlug,
         updated_at: new Date().toISOString()
       })
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", userId)
       .select()
       .single();
