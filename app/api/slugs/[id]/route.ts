@@ -4,7 +4,7 @@ import { getAuth } from "@clerk/nextjs/server";
 
 interface RouteParams {
   params: {
-    id: string;
+    id: Promise<string>;
   };
 }
 
