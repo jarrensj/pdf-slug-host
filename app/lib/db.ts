@@ -10,7 +10,6 @@ export async function createClerkSupabaseClient(req: NextRequest) {
     async accessToken() {
       const { getToken } = getAuth(req);
       const token = await getToken();
-      console.log("token", token);
       return token || '';
     },
   });

@@ -10,8 +10,6 @@ export default function UploadPdfForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useUser();
 
-  console.log(user);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -29,12 +27,30 @@ export default function UploadPdfForm() {
       return;
     }
     try {
+      // First, upload the PDF file to S3
+      const uploadFormData = new FormData();
+      uploadFormData.append("file", file);
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: uploadFormData,
+      });
+
+      if (!uploadRes.ok) {
+        const uploadError = await uploadRes.json();
+        setError(uploadError.error || "Failed to upload PDF file.");
+        return;
+      }
+
+      const { fileUrl } = await uploadRes.json();
+
+      // Then, create the PDF slug record with the S3 URL
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           slug,
-          pdf: "https://example.com/dummy.pdf", // Dummy URL for now
+          pdf: fileUrl, // Use the actual S3 URL
         }),
       });
       const data = await res.json();
@@ -42,7 +58,7 @@ export default function UploadPdfForm() {
         setError(data.error || "Failed to create PDF slug.");
         return;
       }
-      setSuccess(`${slug} created successfully!`);
+      setSuccess(`PDF slug ${slug} created successfully!`);
       setSlug("");
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -83,7 +99,7 @@ export default function UploadPdfForm() {
         {success && <div className="text-green-600 text-sm text-center">{success}</div>}
         <button
           type="submit"
-          className="mt-2 bg-foreground text-background rounded px-4 py-2 font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 dark:hover:text-black transition-colors"
+          className="mt-2 cursor-pointer bg-foreground text-background rounded px-4 py-2 font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 dark:hover:text-black transition-colors"
         >
           Create PDF Slug
         </button>

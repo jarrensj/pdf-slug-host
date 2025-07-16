@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  console.log(userId)
   const supabase = await createClerkSupabaseClient(req);
   const { data, error } = await supabase
     .from("pdf_slugs")
