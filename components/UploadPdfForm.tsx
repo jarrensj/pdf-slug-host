@@ -1,38 +1,21 @@
 "use client";
 import { useRef, useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
+import { useSlugChecker } from "@/hooks/useSlugChecker";
+import SlugStatusIndicator from "./SlugStatusIndicator";
 
 export default function UploadPdfForm() {
   const [slug, setSlug] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
-  const [checkingSlug, setCheckingSlug] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useUser();
 
-  // Debounced slug checking
-  useEffect(() => {
-    if (!slug || slug.length < 2) {
-      setSlugAvailable(null);
-      return;
-    }
-
-    const timeoutId = setTimeout(async () => {
-      setCheckingSlug(true);
-      try {
-        const response = await fetch(`/api/check-slug?slug=${encodeURIComponent(slug)}`);
-        const data = await response.json();
-        setSlugAvailable(data.available);
-      } catch (err) {
-        console.error("Error checking slug:", err);
-      }
-      setCheckingSlug(false);
-    }, 500); // 500ms delay
-
-    return () => clearTimeout(timeoutId);
-  }, [slug]);
+  // Use the slug checker hook
+  const { slugAvailable, checkingSlug, isValidFormat, shouldShowStatus } = useSlugChecker({
+    slug,
+  });
 
   // Auto-clear success message after 10 seconds
   useEffect(() => {
@@ -50,7 +33,7 @@ export default function UploadPdfForm() {
       setError("Please upload a PDF file.");
       return;
     }
-    if (!slug || !/^[-a-zA-Z0-9_]+$/.test(slug)) {
+    if (!slug || !isValidFormat) {
       setError("Please enter a valid unique name (letters, numbers, dashes, underscores only). e.g. my-document");
       return;
     }
@@ -97,7 +80,6 @@ export default function UploadPdfForm() {
       setSuccess(`PDF slug ${slug} created successfully!`);
       setSlug("");
       setFile(null);
-      setSlugAvailable(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
       setError("An unexpected error occurred.");
@@ -131,17 +113,12 @@ export default function UploadPdfForm() {
             className="border border-gray-300 rounded px-3 py-2"
             required
           />
-          {slug && slug.length >= 2 && (
-            <div className="text-sm">
-              {checkingSlug ? (
-                <span className="text-gray-500">Checking availability...</span>
-              ) : slugAvailable === true ? (
-                <span className="text-green-600">✓ Available</span>
-              ) : slugAvailable === false ? (
-                <span className="text-red-500">✗ Already taken</span>
-              ) : null}
-            </div>
-          )}
+          <SlugStatusIndicator
+            slugAvailable={slugAvailable}
+            checkingSlug={checkingSlug}
+            isValidFormat={isValidFormat}
+            shouldShow={shouldShowStatus}
+          />
         </label>
         {error && <div className="text-red-500 text-sm text-center">{error}</div>}
         {success && <div className="text-green-600 text-sm text-center">{success}</div>}
