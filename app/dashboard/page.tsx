@@ -204,7 +204,8 @@ export default function Dashboard() {
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-400">
                           <p>Created: {formatDate(slugData.created_at)}</p>
-                          {slugData.updated_at !== slugData.created_at && (
+                          {slugData.updated_at && 
+                           slugData.updated_at !== slugData.created_at && (
                             <p>Updated: {formatDate(slugData.updated_at)}</p>
                           )}
                         </div>
