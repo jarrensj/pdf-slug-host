@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import EditSlugModal from "@/components/EditSlugModal";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 interface PdfSlug {
   id: string;
@@ -22,6 +23,11 @@ export default function Dashboard() {
     isOpen: boolean;
     slug?: PdfSlug;
   }>({ isOpen: false });
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    slug?: PdfSlug;
+    isDeleting: boolean;
+  }>({ isOpen: false, isDeleting: false });
 
   useEffect(() => {
     if (isLoaded && !user) {
@@ -52,27 +58,38 @@ export default function Dashboard() {
     }
   };
 
-  const handleDelete = async (id: string, slug: string) => {
-    if (!confirm(`Are you sure you want to delete "${slug}"? This action cannot be undone.`)) {
-      return;
-    }
+  const handleDeleteClick = (slug: PdfSlug) => {
+    setDeleteModal({ isOpen: true, slug, isDeleting: false });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteModal.slug) return;
+
+    setDeleteModal(prev => ({ ...prev, isDeleting: true }));
 
     try {
-      const response = await fetch(`/api/slugs/${id}`, {
+      const response = await fetch(`/api/slugs/${deleteModal.slug.id}`, {
         method: 'DELETE',
       });
 
       if (!response.ok) {
         const data = await response.json();
-        alert(data.error || 'Failed to delete PDF slug');
+        setError(data.error || 'Failed to delete PDF slug');
+        setDeleteModal({ isOpen: false, isDeleting: false });
         return;
       }
 
       // Remove from local state
-      setSlugs(prevSlugs => prevSlugs.filter(s => s.id !== id));
+      setSlugs(prevSlugs => prevSlugs.filter(s => s.id !== deleteModal.slug!.id));
+      setDeleteModal({ isOpen: false, isDeleting: false });
     } catch (err) {
-      alert('An unexpected error occurred');
+      setError('An unexpected error occurred while deleting');
+      setDeleteModal({ isOpen: false, isDeleting: false });
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModal({ isOpen: false, isDeleting: false });
   };
 
   const handleEdit = (slug: PdfSlug) => {
@@ -134,6 +151,12 @@ export default function Dashboard() {
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
             <p className="text-red-800 dark:text-red-200">{error}</p>
+            <button 
+              onClick={() => setError('')}
+              className="mt-2 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+            >
+              Dismiss
+            </button>
           </div>
         )}
 
@@ -195,7 +218,7 @@ export default function Dashboard() {
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(slugData.id, slugData.slug)}
+                          onClick={() => handleDeleteClick(slugData)}
                           className="px-3 py-1 text-sm bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                         >
                           Delete
@@ -243,6 +266,18 @@ export default function Dashboard() {
           onUpdate={handleUpdateSlug}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete PDF Slug"
+        message={`Are you sure you want to delete "${deleteModal.slug?.slug}"? This action cannot be undone and will permanently remove the PDF slug from your account.`}
+        confirmButtonText="Delete Slug"
+        isLoading={deleteModal.isDeleting}
+        variant="danger"
+      />
     </div>
   );
 } 
