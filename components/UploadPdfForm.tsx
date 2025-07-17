@@ -17,23 +17,23 @@ export default function UploadPdfForm() {
     slug,
   });
 
-  // Auto-clear success message after 10 seconds
-  useEffect(() => {
-    if (success) {
-      const timer = setTimeout(() => setSuccess(""), 10000);
-      return () => clearTimeout(timer);
-    }
-  }, [success]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
     if (!file) {
-      setError("Please upload a PDF file.");
+      setError("Please upload a PDF or JPG file.");
       return;
     }
-    if (!slug || !isValidFormat) {
+    
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      setError("Please upload a valid PDF or JPG file.");
+      return;
+    }
+    
+    if (!slug || !/^[-a-zA-Z0-9_]+$/.test(slug)) {
       setError("Please enter a valid unique name (letters, numbers, dashes, underscores only). e.g. my-document");
       return;
     }
@@ -42,11 +42,11 @@ export default function UploadPdfForm() {
       return;
     }
     if (!user) {
-      setError("You must be signed in to upload a PDF.");
+      setError("You must be signed in to upload a file.");
       return;
     }
     try {
-      // First, upload the PDF file to S3
+      // First, upload the file to S3
       const uploadFormData = new FormData();
       uploadFormData.append("file", file);
 
@@ -57,27 +57,27 @@ export default function UploadPdfForm() {
 
       if (!uploadRes.ok) {
         const uploadError = await uploadRes.json();
-        setError(uploadError.error || "Failed to upload PDF file.");
+        setError(uploadError.error || "Failed to upload file.");
         return;
       }
 
       const { fileUrl } = await uploadRes.json();
 
-      // Then, create the PDF slug record with the S3 URL
+      // Then, create the file slug record with the S3 URL
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           slug,
-          pdf: fileUrl, // Use the actual S3 URL
+          pdf: fileUrl, // Keep the field name as 'pdf' for backwards compatibility
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Failed to create PDF slug.");
+        setError(data.error || "Failed to create file slug.");
         return;
       }
-      setSuccess(`PDF slug ${slug} created successfully!`);
+      setSuccess(`File slug ${slug} created successfully!`);
       setSlug("");
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -88,15 +88,15 @@ export default function UploadPdfForm() {
 
   return (
     <div className="w-full max-w-md bg-white dark:bg-[#18181b] rounded-xl shadow-lg p-8 flex flex-col items-center">
-      <h1 className="text-2xl font-bold mb-2 text-center">Upload your PDF</h1>
-      <p className="mb-6 text-center text-gray-500 dark:text-gray-300 text-sm">Choose a PDF and give it a unique name to create a custom link like <span className="font-mono bg-black/5 dark:bg-white/10 px-1 rounded">/your-slug</span></p>
+      <h1 className="text-2xl font-bold mb-2 text-center">Upload your File</h1>
+      <p className="mb-6 text-center text-gray-500 dark:text-gray-300 text-sm">Choose a PDF or JPG file and give it a unique name to create a custom link like <span className="font-mono bg-black/5 dark:bg-white/10 px-1 rounded">/your-slug</span></p>
       <form className="w-full flex flex-col gap-4" onSubmit={handleSubmit}>
         <label className="flex flex-col gap-2">
-          <span className="font-medium">PDF File</span>
+          <span className="font-medium">File (PDF or JPG)</span>
           <input
             ref={fileInputRef}
             type="file"
-            accept="application/pdf"
+            accept="application/pdf,image/jpeg,image/jpg"
             className="border border-gray-300 rounded px-3 py-2 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-100 dark:file:bg-gray-800 file:text-gray-700 dark:file:text-gray-200"
             onChange={e => setFile(e.target.files?.[0] || null)}
             required
@@ -124,9 +124,9 @@ export default function UploadPdfForm() {
         {success && <div className="text-green-600 text-sm text-center">{success}</div>}
         <button
           type="submit"
-          className="mt-2 bg-foreground text-background rounded px-4 py-2 font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 dark:hover:text-black transition-colors"
+          className="mt-2 bg-foreground cursor-pointer text-background rounded px-4 py-2 font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 dark:hover:text-black transition-colors"
         >
-          Create PDF Slug
+          Create File Slug
         </button>
       </form>
     </div>
