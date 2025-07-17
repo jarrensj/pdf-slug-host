@@ -9,20 +9,27 @@ const s3Client = new S3Client({
   },
 });
 
-export const uploadPdfToS3 = async (file: Buffer, fileName: string) => {
-  const key = `pdfs/${Date.now()}-${fileName}`;
+export const uploadFileToS3 = async (file: Buffer, fileName: string, contentType: string) => {
+  // Determine the folder based on content type
+  const folder = contentType === 'application/pdf' ? 'pdfs' : 'images';
+  const key = `${folder}/${Date.now()}-${fileName}`;
   
   const command = new PutObjectCommand({
     Bucket: process.env.AWS_S3_BUCKET_NAME!,
     Key: key,
     Body: file,
-    ContentType: 'application/pdf',
+    ContentType: contentType,
   });
 
   await s3Client.send(command);
   
   // Return the public URL
   return `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+};
+
+// Keep the old function for backwards compatibility
+export const uploadPdfToS3 = async (file: Buffer, fileName: string) => {
+  return uploadFileToS3(file, fileName, 'application/pdf');
 };
 
 export const generatePresignedUploadUrl = async (fileName: string) => {

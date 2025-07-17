@@ -23,7 +23,7 @@ export default function Header() {
             href={isOnDashboard ? "/" : "/dashboard"}
             className="bg-foreground text-background px-4 py-2 rounded font-medium hover:bg-gray-800 dark:hover:bg-gray-200 dark:hover:text-black transition-colors"
           >
-            {isOnDashboard ? "Upload Your PDFs" : "Edit Your PDFs"}
+            {isOnDashboard ? "Upload Your Files" : "Edit Your Files"}
           </Link>
           <UserButton afterSignOutUrl="/" />
         </nav>

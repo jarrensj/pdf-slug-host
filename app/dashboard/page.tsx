@@ -144,7 +144,7 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
             Welcome back, {user.firstName || user.emailAddresses[0]?.emailAddress}! 
-            Manage your PDF slugs below.
+            Manage your file slugs below.
           </p>
         </header>
 
@@ -163,7 +163,7 @@ export default function Dashboard() {
         {/* PDF Slugs Management Section */}
         <div className="bg-white dark:bg-[#18181b] rounded-xl shadow-lg p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold">Your PDF Slugs</h2>
+            <h2 className="text-xl font-semibold">Your File Slugs</h2>
             <a 
               href="/" 
               className="bg-foreground text-background px-4 py-2 rounded font-medium hover:bg-gray-800 dark:hover:bg-gray-200 dark:hover:text-black transition-colors"
@@ -174,8 +174,8 @@ export default function Dashboard() {
           
           {slugs.length === 0 ? (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              <p className="mb-4">No PDF slugs created yet.</p>
-              <p className="text-sm">Create your first PDF slug to get started!</p>
+              <p className="mb-4">No file slugs created yet.</p>
+              <p className="text-sm">Create your first file slug to get started!</p>
             </div>
           ) : (
             <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
@@ -199,7 +199,7 @@ export default function Dashboard() {
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
                           >
-                            View PDF ↗
+                            View File ↗
                           </a>
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -241,13 +241,13 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
           <div className="bg-white dark:bg-[#18181b] rounded-xl shadow-lg p-6 text-center">
             <h3 className="text-2xl font-bold text-foreground">{slugs.length}</h3>
-            <p className="text-gray-600 dark:text-gray-400">Total PDFs</p>
+            <p className="text-gray-600 dark:text-gray-400">Total Files</p>
           </div>
           <div className="bg-white dark:bg-[#18181b] rounded-xl shadow-lg p-6 text-center">
             <h3 className="text-2xl font-bold text-foreground">
               {slugs.filter(s => s.updated_at !== s.created_at).length}
             </h3>
-            <p className="text-gray-600 dark:text-gray-400">Updated PDFs</p>
+            <p className="text-gray-600 dark:text-gray-400">Updated Files</p>
           </div>
           <div className="bg-white dark:bg-[#18181b] rounded-xl shadow-lg p-6 text-center">
             <h3 className="text-2xl font-bold text-foreground">{slugs.length}</h3>
@@ -272,8 +272,8 @@ export default function Dashboard() {
         isOpen={deleteModal.isOpen}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
-        title="Delete PDF Slug"
-        message={`Are you sure you want to delete "${deleteModal.slug?.slug}"? This action cannot be undone and will permanently remove the PDF slug from your account.`}
+        title="Delete File Slug"
+        message={`Are you sure you want to delete "${deleteModal.slug?.slug}"? This action cannot be undone and will permanently remove the file slug from your account.`}
         confirmButtonText="Delete Slug"
         isLoading={deleteModal.isDeleting}
         variant="danger"
