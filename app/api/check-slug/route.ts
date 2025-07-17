@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from '@supabase/supabase-js';
 import { createClerkSupabaseClient } from "@/app/lib/db";
 import { getAuth } from "@clerk/nextjs/server";
 
@@ -25,22 +24,11 @@ export async function GET(req: NextRequest) {
       }, { status: 200 });
     }
 
-    let supabaseClient;
-
-    // Try to use service key for global checking, fallback to user client
-    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      supabaseClient = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY
-      );
-    } else {
-      // Fallback to user client if service key not available
-      console.warn("SUPABASE_SERVICE_ROLE_KEY not found, using user client for slug checking");
-      supabaseClient = await createClerkSupabaseClient(req);
-    }
+    const supabase = await createClerkSupabaseClient(req);
 
     // Check if slug exists anywhere in the database
-    const { data: existingSlug, error } = await supabaseClient
+    // This relies on proper RLS policies for global slug checking
+    const { data: existingSlug, error } = await supabase
       .from("pdf_slugs")
       .select("slug")
       .eq("slug", slug)
