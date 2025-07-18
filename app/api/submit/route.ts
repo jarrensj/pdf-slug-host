@@ -4,8 +4,8 @@ import { getAuth } from "@clerk/nextjs/server";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { slug, pdf } = body;
-  if (!slug || !pdf) {
+  const { slug, file } = body;
+  if (!slug || !file) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   // Insert the new record
   const { data, error } = await supabase
     .from("pdf_slugs")
-    .insert([{ slug, pdf, user_id: userId }])
+    .insert([{ slug, file, user_id: userId }])
     .select();
     
   if (error) {
