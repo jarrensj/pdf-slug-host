@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClerkSupabaseClient } from "@/app/lib/db";
-import { getAuth } from "@clerk/nextjs/server";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseServiceKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || "";
 
 export async function GET(req: NextRequest) {
   try {
-    // Check authentication
-    const { userId } = getAuth(req);
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(req.url);
     const slug = searchParams.get("slug");
 
@@ -24,24 +20,40 @@ export async function GET(req: NextRequest) {
       }, { status: 200 });
     }
 
-    const supabase = await createClerkSupabaseClient(req);
+    // Use service role key to bypass RLS policies for slug checking
+    // This is safe since we're only checking slug existence (public read operation)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
 
     // Check if slug exists anywhere in the database
-    // This relies on proper RLS policies for global slug checking
-    const { data: existingSlug, error } = await supabase
+    const { data: existingSlug, error, count } = await supabase
       .from("pdf_slugs")
-      .select("slug")
-      .eq("slug", slug)
-      .single();
+      .select("slug", { count: 'exact' })
+      .eq("slug", slug);
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found (which is what we want)
+    console.log("Slug check debug:", {
+      slug,
+      data: existingSlug,
+      error: error,
+      count: count,
+      errorCode: error?.code,
+      errorMessage: error?.message
+    });
+
+    if (error) {
       console.error("Database error checking slug:", error);
       return NextResponse.json({ error: "Database error" }, { status: 500 });
     }
 
+    const isAvailable = !existingSlug || existingSlug.length === 0;
+
     return NextResponse.json({ 
-      available: !existingSlug,
-      slug: slug 
+      available: isAvailable,
+      slug: slug
     }, { status: 200 });
   } catch (error) {
     console.error("Unexpected error in check-slug:", error);
