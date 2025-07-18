@@ -309,7 +309,7 @@ export default function UploadPdfForm() {
             <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-sm text-blue-600 dark:text-blue-400 break-all">
-                  {typeof window !== 'undefined' ? window.location.origin : ''}/${uploadedSlug}
+                  {typeof window !== 'undefined' ? window.location.origin : ''}/{uploadedSlug}
                 </span>
                 <button onClick={copyToClipboard} className="ml-2 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" title="Copy to clipboard">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

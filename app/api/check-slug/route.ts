@@ -35,15 +35,6 @@ export async function GET(req: NextRequest) {
       .select("slug", { count: 'exact' })
       .eq("slug", slug);
 
-    console.log("Slug check debug:", {
-      slug,
-      data: existingSlug,
-      error: error,
-      count: count,
-      errorCode: error?.code,
-      errorMessage: error?.message
-    });
-
     if (error) {
       console.error("Database error checking slug:", error);
       return NextResponse.json({ error: "Database error" }, { status: 500 });
