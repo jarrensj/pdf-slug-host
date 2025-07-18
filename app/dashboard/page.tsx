@@ -8,7 +8,7 @@ import ConfirmationModal from "@/components/ConfirmationModal";
 interface PdfSlug {
   id: string;
   slug: string;
-  pdf: string;
+  file: string;
   created_at: string;
   updated_at: string;
 }
@@ -194,7 +194,7 @@ export default function Dashboard() {
                             /{slugData.slug}
                           </h3>
                           <a
-                            href={slugData.pdf}
+                            href={slugData.file}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
