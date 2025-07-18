@@ -28,17 +28,48 @@ export default function UploadPdfForm() {
     slug,
   });
 
-  // Auto-advance to file upload step when user signs in
+  const slugRegex = /^[-a-zA-Z0-9_]+$/;
+  const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg'];
+
+  // Initialize from localStorage on mount
   useEffect(() => {
-    if (isLoaded && user && step === UploadStep.SIGN_IN) {
-      setStep(UploadStep.FILE_UPLOAD);
+    if (typeof window !== 'undefined') {
+      const savedSlug = localStorage.getItem('upload-slug');
+      const savedStep = localStorage.getItem('upload-step');
+      
+      if (savedSlug) {
+        setSlug(savedSlug);
+      }
+      
+      if (savedStep && savedSlug) {
+        setStep(savedStep as UploadStep);
+      }
     }
-  }, [user, isLoaded, step]);
+  }, []);
+
+  // Handle authentication state changes
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (typeof window !== 'undefined') {
+      const savedSlug = localStorage.getItem('upload-slug');
+      const savedStep = localStorage.getItem('upload-step');
+      
+      // If user just signed in and we have saved state, go to file upload
+      if (user && savedSlug && (savedStep === UploadStep.SIGN_IN || savedStep === UploadStep.FILE_UPLOAD)) {
+        setStep(UploadStep.FILE_UPLOAD);
+        setSlug(savedSlug);
+        // Clean up localStorage after successful transition
+        localStorage.removeItem('upload-slug');
+        localStorage.removeItem('upload-step');
+      }
+    }
+  }, [user, isLoaded]);
 
   const handleSlugNext = () => {
     setError("");
     
-    if (!slug || !/^[-a-zA-Z0-9_]+$/.test(slug)) {
+    if (!slug || !slugRegex.test(slug)) {
       setError("Please enter a valid unique name (letters, numbers, dashes, underscores only). e.g. my-document");
       return;
     }
@@ -56,6 +87,11 @@ export default function UploadPdfForm() {
     if (user) {
       setStep(UploadStep.FILE_UPLOAD);
     } else {
+      // Save state to localStorage before going to sign in
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('upload-slug', slug);
+        localStorage.setItem('upload-step', UploadStep.SIGN_IN);
+      }
       setStep(UploadStep.SIGN_IN);
     }
   };
@@ -69,7 +105,6 @@ export default function UploadPdfForm() {
       return;
     }
     
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg'];
     if (!allowedTypes.includes(file.type)) {
       setError("Please upload a valid PDF or JPG file.");
       return;
@@ -103,10 +138,7 @@ export default function UploadPdfForm() {
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          slug,
-          pdf: fileUrl,
-        }),
+        body: JSON.stringify({ slug, pdf: fileUrl }),
       });
       
       const data = await res.json();
@@ -126,17 +158,16 @@ export default function UploadPdfForm() {
     }
   };
 
-  const copyToClipboard = async () => {
-    const url = `${window.location.origin}/${uploadedSlug}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      // Could add a toast notification here
-    } catch (err) {
-      console.error('Failed to copy to clipboard:', err);
-    }
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(`${window.location.origin}/${uploadedSlug}`);
   };
 
   const startNewUpload = () => {
+    // Clean up localStorage when starting new upload
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('upload-slug');
+      localStorage.removeItem('upload-step');
+    }
     setSlug("");
     setFile(null);
     setError("");
@@ -148,10 +179,17 @@ export default function UploadPdfForm() {
 
   const goBack = () => {
     setError("");
-    if (step === UploadStep.SIGN_IN || step === UploadStep.FILE_UPLOAD) {
-      setStep(UploadStep.SLUG_CHECK);
+    // Clean up localStorage when going back
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('upload-slug');
+      localStorage.removeItem('upload-step');
     }
+    setStep(UploadStep.SLUG_CHECK);
   };
+
+  const buttonClass = "w-full rounded px-4 py-2 font-semibold transition-colors";
+  const primaryButton = `${buttonClass} bg-foreground text-background hover:bg-gray-800 dark:hover:bg-gray-200 dark:hover:text-black`;
+  const secondaryButton = `${buttonClass} bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600`;
 
   return (
     <div className="w-full max-w-md bg-white dark:bg-[#18181b] rounded-xl shadow-lg p-8 flex flex-col items-center">
@@ -170,10 +208,8 @@ export default function UploadPdfForm() {
                 type="text"
                 value={slug}
                 onChange={e => setSlug(e.target.value)}
-                pattern="[-a-zA-Z0-9_]+"
                 placeholder="e.g. my-document"
                 className="border border-gray-300 rounded px-3 py-2"
-                required
               />
               <SlugStatusIndicator
                 slugAvailable={slugAvailable}
@@ -189,7 +225,7 @@ export default function UploadPdfForm() {
               type="button"
               onClick={handleSlugNext}
               disabled={!slugAvailable || checkingSlug}
-              className="mt-2 bg-foreground cursor-pointer text-background rounded px-4 py-2 font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 dark:hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`${primaryButton} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {checkingSlug ? "Checking..." : "Create File Slug"}
             </button>
@@ -206,18 +242,9 @@ export default function UploadPdfForm() {
           
           <div className="w-full flex flex-col gap-4">
             <SignInButton mode="modal">
-              <button className="w-full bg-foreground cursor-pointer text-background rounded px-4 py-2 font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 dark:hover:text-black transition-colors">
-                Sign In / Create Account
-              </button>
+              <button className={primaryButton}>Sign In / Create Account</button>
             </SignInButton>
-            
-            <button
-              type="button"
-              onClick={goBack}
-              className="w-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded px-4 py-2 font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-            >
-              ← Back to Name Selection
-            </button>
+            <button onClick={goBack} className={secondaryButton}>← Back to Name Selection</button>
           </div>
         </>
       )}
@@ -239,7 +266,6 @@ export default function UploadPdfForm() {
                 className="border border-gray-300 rounded px-3 py-2 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-100 dark:file:bg-gray-800 file:text-gray-700 dark:file:text-gray-200"
                 onChange={e => setFile(e.target.files?.[0] || null)}
                 disabled={step === UploadStep.UPLOADING}
-                required
               />
             </label>
             
@@ -250,14 +276,14 @@ export default function UploadPdfForm() {
                 type="button"
                 onClick={goBack}
                 disabled={step === UploadStep.UPLOADING}
-                className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded px-4 py-2 font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`flex-1 ${secondaryButton} disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 ← Back
               </button>
               <button
                 type="submit"
                 disabled={step === UploadStep.UPLOADING || !file}
-                className="flex-1 bg-foreground cursor-pointer text-background rounded px-4 py-2 font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 dark:hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`flex-1 ${primaryButton} disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {step === UploadStep.UPLOADING ? "Uploading..." : "Upload File"}
               </button>
@@ -283,13 +309,9 @@ export default function UploadPdfForm() {
             <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-sm text-blue-600 dark:text-blue-400 break-all">
-                  {typeof window !== 'undefined' ? window.location.origin : ''}/{uploadedSlug}
+                  {typeof window !== 'undefined' ? window.location.origin : ''}/${uploadedSlug}
                 </span>
-                <button
-                  onClick={copyToClipboard}
-                  className="ml-2 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-                  title="Copy to clipboard"
-                >
+                <button onClick={copyToClipboard} className="ml-2 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" title="Copy to clipboard">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
@@ -307,14 +329,7 @@ export default function UploadPdfForm() {
             >
               View File →
             </a>
-            
-            <button
-              type="button"
-              onClick={startNewUpload}
-              className="w-full bg-foreground text-background rounded px-4 py-2 font-medium hover:bg-gray-800 dark:hover:bg-gray-200 dark:hover:text-black transition-colors"
-            >
-              Upload Another File
-            </button>
+            <button onClick={startNewUpload} className={primaryButton}>Upload Another File</button>
           </div>
         </>
       )}
