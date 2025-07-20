@@ -37,7 +37,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 | `id`            | uuid      | primary key                      |
 | `slug`          | text      | unique slug for pdf access       |
 | `user_id`       | text      | owner                            |
-| `pdf`           | text      | public url to the pdf            |
+| `file`          | text      | public url to the pdf            |
 | `created_at`    | timestamp | timestamp of create              |
 | `updated_at`    | timestamp | timestamp of update              |
 

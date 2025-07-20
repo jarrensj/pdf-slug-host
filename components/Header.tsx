@@ -6,6 +6,13 @@ import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
 export default function Header() {
   const pathname = usePathname();
   const isOnDashboard = pathname === '/dashboard';
+  
+  // Hide header on slug pages (any route that's not a known app route)
+  const isSlugPage = pathname !== '/' && pathname !== '/dashboard' && !pathname.startsWith('/success');
+  
+  if (isSlugPage) {
+    return null; // Don't render header on slug pages
+  }
 
   return (
     <header className="flex justify-end items-center p-4 gap-4">
